@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>팔굽혀펴기 음성 카운트 타이머</title>
+    <style>
+        :root {
+            --primary: #EF4444; /* 팔굽혀펴기에 어울리는 강렬한 레드 */
+            --exercise: #EF4444; 
+            --rest: #3B82F6; /* 휴식은 시원한 블루 */
+            --bg: #F3F4F6;
+            --text-main: #1F2937;
+            --text-sub: #6B7280;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 1s ease;
+        }
+
+        .container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            padding: 40px 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background-color: var(--primary);
+            transition: background-color 1s ease;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: var(--text-main);
+            margin: 0 0 10px 0;
+            font-weight: 700;
+        }
+
+        .set-counter {
+            font-size: 16px;
+            color: var(--text-sub);
+            margin-bottom: 24px;
+            font-weight: 600;
+            background: #F3F4F6;
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+        }
+
+        .timer-wrapper {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto 30px auto;
+        }
+
+        .timer-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: #E5E7EB;
+            stroke-width: 12;
+        }
+
+        .circle-progress {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-dasharray: 628; /* 2 * pi * r (r=100) */
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear, stroke 1s ease;
+        }
+
+        .time-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s;
+        }
+
+        .count-number {
+            font-size: 72px;
+            font-weight: 800;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+
+        .count-label {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-sub);
+            margin-top: 4px;
+        }
+
+        .paused-text {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .instruction {
+            font-size: 18px;
+            color: var(--text-main);
+            margin-bottom: 30px;
+            min-height: 54px;
+            font-weight: 500;
+            line-height: 1.5;
+            word-break: keep-all;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 18px 0;
+            width: 100%;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            touch-action: manipulation;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        button:hover {
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-secondary {
+            background-color: #E5E7EB;
+            color: #4B5563;
+            margin-top: 12px;
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background-color: #D1D5DB;
+            box-shadow: none;
+        }
+
+        /* 상태별 색상 클래스 */
+        body.state-exercise { background-color: #FEF2F2; } /* 연한 레드 배경 */
+        body.state-rest { background-color: #EFF6FF; } /* 연한 블루 배경 */
+        
+        .state-exercise .status-bar { background-color: var(--exercise); }
+        .state-exercise .circle-progress { stroke: var(--exercise); }
+        .state-exercise button:not(.btn-secondary) { background-color: var(--exercise); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+
+        .state-rest .status-bar { background-color: var(--rest); }
+        .state-rest .circle-progress { stroke: var(--rest); }
+        
+        .hidden { display: none !important; }
+
+        @media (max-width: 480px) {
+            .container { padding: 30px 20px; border-radius: 20px; }
+            h1 { font-size: 20px; margin-bottom: 8px; }
+            .set-counter { font-size: 14px; margin-bottom: 20px; padding: 4px 12px; }
+            .timer-wrapper { width: 180px; height: 180px; margin-bottom: 20px; }
+            .count-number { font-size: 60px; }
+            .instruction { font-size: 15px; margin-bottom: 24px; min-height: 45px; }
+            button { font-size: 16px; padding: 15px 0; }
+            .btn-secondary { margin-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="status-bar" id="statusBar"></div>
+        
+        <h1>팔굽혀펴기 (푸시업)</h1>
+        <div class="set-counter" id="setCounter">준비</div>
+
+        <div class="timer-wrapper">
+            <svg class="timer-svg" viewBox="0 0 220 220">
+                <circle class="circle-bg" cx="110" cy="110" r="100"></circle>
+                <circle class="circle-progress" id="progressCircle" cx="110" cy="110" r="100"></circle>
+            </svg>
+            <div class="time-display" id="timeDisplay">
+                <span class="count-number" id="mainNumber">0</span>
+                <span class="count-label" id="subLabel">/ 10 개</span>
+            </div>
+        </div>
+
+        <div class="instruction" id="instructionText">
+            시작 버튼을 누르면 음성 카운트가 시작됩니다.<br>(3초당 1개 속도 유지)
+        </div>
+
+        <button id="mainBtn" onclick="handleButtonClick()">시작하기</button>
+        <button id="pauseBtn" class="btn-secondary hidden" onclick="togglePause()">일시정지</button>
+    </div>
+
+    <script>
+        // --- 설정 값 ---
+        const TOTAL_SETS = 3;         // 총 세트 수
+        const REPS_PER_SET = 10;      // 1세트당 개수
+        const SEC_PER_REP = 3;        // 1개당 소요 시간 (3초로 수정)
+        const REST_TIME = 10;         // 세트 간 휴식 시간 (10초)
+        
+        const TOTAL_EXERCISE_TIME = REPS_PER_SET * SEC_PER_REP; // 1세트 총 30초
+
+        // --- 상태 변수 ---
+        let currentSet = 0;
+        let currentRep = 0;
+        let timeLeft = 0;             // 현재 페이즈(운동/휴식)의 남은 총 시간
+        let totalTimeForPhase = 0;    // 프로그레스 바 계산용
+        let timerInterval = null;
+        let phase = 'ready';          // ready, exercise, rest, finished
+        let isPaused = false;
+        let isTTSInitialized = false;
+
+        // --- DOM 요소 ---
+        const mainNumber = document.getElementById('mainNumber');
+        const subLabel = document.getElementById('subLabel');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const setCounter = document.getElementById('setCounter');
+        const instructionText = document.getElementById('instructionText');
+        const mainBtn = document.getElementById('mainBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const progressCircle = document.getElementById('progressCircle');
+        const body = document.body;
+
+        const CIRCUMFERENCE = 2 * Math.PI * 100; // r=100
+
+        // --- 오디오 (비프음) ---
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'start') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.8, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'rest') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.6, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4);
+            } else if (type === 'finish') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15);
+                osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.3);
+                osc.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.45);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.8);
+            }
+        }
+
+        // --- 음성 합성 (TTS) ---
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // 이전 음성 취소 (밀림 방지)
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ko-KR';
+                utterance.rate = 1.2; // 속도가 빨라졌으므로 음성도 약간 빠르게 조절
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // --- UI 업데이트 로직 ---
+        function updateUI(isReset = false) {
+            // 프로그레스 바 계산
+            const progress = totalTimeForPhase > 0 ? (timeLeft / totalTimeForPhase) : 0;
+            const offset = CIRCUMFERENCE - (progress * CIRCUMFERENCE);
+
+            if (isReset) {
+                progressCircle.style.transition = 'none';
+                progressCircle.style.strokeDashoffset = offset;
+                void progressCircle.offsetWidth; // Force reflow
+            } else {
+                progressCircle.style.transition = 'stroke-dashoffset 1s linear, stroke 1s ease';
+                progressCircle.style.strokeDashoffset = offset;
+            }
+
+            // 상태별 텍스트 및 화면 변경
+            if (phase === 'exercise') {
+                mainNumber.innerText = currentRep;
+                subLabel.innerText = `/ ${REPS_PER_SET} 개`;
+                
+                setCounter.innerText = `${currentSet} / ${TOTAL_SETS} 세트 (운동 중)`;
+                instructionText.innerHTML = "<strong>음성에 맞춰 일정한 속도로 내려갔다 올라오세요.</strong>";
+                body.className = 'state-exercise';
+                
+                mainBtn.classList.add('hidden');
+                pauseBtn.classList.remove('hidden');
+                pauseBtn.innerText = isPaused ? "계속하기" : "일시정지";
+            } 
+            else if (phase === 'rest') {
+                mainNumber.innerText = timeLeft;
+                subLabel.innerText = "초 남음";
+                
+                setCounter.innerText = `${currentSet} / ${TOTAL_SETS} 세트 (휴식 중)`;
+                instructionText.innerHTML = "어깨와 팔을 가볍게 풀며<br>다음 세트를 준비하세요.";
+                body.className = 'state-rest';
+                
+                mainBtn.classList.add('hidden');
+                pauseBtn.classList.remove('hidden');
+                pauseBtn.innerText = isPaused ? "계속하기" : "일시정지";
+            } 
+            else if (phase === 'finished') {
+                mainNumber.innerText = "완료";
+                subLabel.innerText = "Great!";
+                
+                setCounter.innerText = "모든 세트 종료";
+                instructionText.innerHTML = "<strong>수고하셨습니다! 최고의 펌핑이네요.</strong><br>꾸준함이 가장 큰 무기입니다.";
+                progressCircle.style.strokeDashoffset = CIRCUMFERENCE; // 게이지 비우기
+                body.className = '';
+                
+                mainBtn.innerText = "다시 시작";
+                mainBtn.classList.remove('hidden');
+                pauseBtn.classList.add('hidden');
+                timeDisplay.classList.remove('paused-text');
+            } 
+            else {
+                // ready
+                mainNumber.innerText = "10";
+                subLabel.innerText = `개 x ${TOTAL_SETS}세트`;
+                setCounter.innerText = "준비";
+                progressCircle.style.strokeDashoffset = 0;
+                body.className = '';
+                
+                mainBtn.innerText = "시작하기";
+                mainBtn.classList.remove('hidden');
+                pauseBtn.classList.add('hidden');
+                timeDisplay.classList.remove('paused-text');
+            }
+        }
+
+        // --- 버튼 이벤트 ---
+        function handleButtonClick() {
+            initAudio();
+            
+            // 모바일 브라우저 음성 권한 활성화를 위한 빈 음성 출력
+            if (!isTTSInitialized && 'speechSynthesis' in window) {
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+                isTTSInitialized = true;
+            }
+
+            if (phase === 'ready' || phase === 'finished') {
+                startWorkout();
+            }
+        }
+
+        function togglePause() {
+            initAudio();
+            if (timeLeft <= 0) return;
+
+            isPaused = !isPaused;
+
+            if (isPaused) {
+                clearInterval(timerInterval);
+                window.speechSynthesis.pause(); // 음성 일시정지
+                timeDisplay.classList.add('paused-text');
+            } else {
+                timerInterval = setInterval(tick, 1000);
+                window.speechSynthesis.resume(); // 음성 재개
+                timeDisplay.classList.remove('paused-text');
+            }
+            updateUI();
+        }
+
+        // --- 운동 제어 로직 ---
+        function startWorkout() {
+            currentSet = 1;
+            isPaused = false;
+            startExercisePhase();
+        }
+
+        function startExercisePhase() {
+            phase = 'exercise';
+            timeLeft = TOTAL_EXERCISE_TIME; // 30초 (10개 * 3초)
+            totalTimeForPhase = TOTAL_EXERCISE_TIME;
+            
+            currentRep = 1;
+            playSound('start');
+            speak(currentRep + "개"); // 시작하자마자 "1개" 음성 재생
+            
+            updateUI(true); // 게이지 꽉 찬 상태로 시작
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(tick, 1000);
+        }
+
+        function startRestPhase() {
+            phase = 'rest';
+            timeLeft = REST_TIME; // 10초 휴식
+            totalTimeForPhase = REST_TIME;
+            
+            playSound('rest');
+            speak("휴식입니다.");
+            
+            updateUI(true);
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(tick, 1000);
+        }
+
+        function finishWorkout() {
+            phase = 'finished';
+            clearInterval(timerInterval);
+            playSound('finish');
+            speak("모든 운동을 완료했습니다. 수고하셨습니다.");
+            updateUI(false);
+        }
+
+        // --- 1초마다 실행되는 메인 타이머 ---
+        function tick() {
+            timeLeft--;
+
+            if (phase === 'exercise') {
+                // 경과된 시간을 통해 현재 몇 개째인지 계산
+                let elapsed = TOTAL_EXERCISE_TIME - timeLeft; 
+                let calculatedRep = Math.floor(elapsed / SEC_PER_REP) + 1;
+
+                if (calculatedRep > REPS_PER_SET) {
+                    // 10개가 완전히 끝났을 때
+                    clearInterval(timerInterval);
+                    setTimeout(() => {
+                        if (currentSet >= TOTAL_SETS) {
+                            finishWorkout();
+                        } else {
+                            startRestPhase();
+                        }
+                    }, 1000);
+                } else {
+                    // 개수가 넘어가는 순간
+                    if (calculatedRep > currentRep) {
+                        currentRep = calculatedRep;
+                        speak(currentRep + "개");
+                    }
+                    updateUI(); // UI는 매초 업데이트하여 게이지가 줄어들게 함
+                }
+            } 
+            else if (phase === 'rest') {
+                updateUI();
+                
+                // 휴식 카운트다운 알림
+                if (timeLeft === 3) speak("3");
+                else if (timeLeft === 2) speak("2");
+                else if (timeLeft === 1) speak("1");
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    setTimeout(() => {
+                        currentSet++;
+                        startExercisePhase();
+                    }, 1000);
+                }
+            }
+        }
+
+        // 초기 세팅
+        progressCircle.style.strokeDasharray = CIRCUMFERENCE;
+        updateUI(true);
+    </script>
+</body>
+</html>
