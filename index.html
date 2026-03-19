@@ -3,15 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>의자에 앉아서 다리 펴기 타이머</title>
+    <title>홈트레이닝 통합 타이머</title>
     <style>
         :root {
-            --primary: #4F46E5;
-            --exercise: #10B981;
-            --rest: #F59E0B;
+            --primary-knee: #4F46E5;
+            --primary-pushup: #EF4444;
+            --exercise-knee: #10B981;
+            --rest-knee: #F59E0B;
+            --rest-pushup: #3B82F6;
             --bg: #F3F4F6;
             --text-main: #1F2937;
             --text-sub: #6B7280;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -23,8 +30,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            /* 배경색 전환을 1초로 늘려 더 부드럽게 변경 */
-            transition: background-color 1s ease;
+            transition: background-color 0.8s ease;
         }
 
         .container {
@@ -33,10 +39,14 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             padding: 40px 30px;
             width: 90%;
-            max-width: 400px;
+            max-width: 420px;
             text-align: center;
             position: relative;
             overflow: hidden;
+            min-height: 550px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .status-bar {
@@ -45,8 +55,8 @@
             left: 0;
             right: 0;
             height: 8px;
-            background-color: var(--primary);
-            transition: background-color 1s ease;
+            background-color: #DDD;
+            transition: background-color 0.8s ease;
         }
 
         h1 {
@@ -56,10 +66,58 @@
             font-weight: 700;
         }
 
-        .set-counter {
-            font-size: 16px;
+        .description {
             color: var(--text-sub);
+            font-size: 14px;
             margin-bottom: 30px;
+        }
+
+        /* 메인 메뉴 스타일 */
+        .menu-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .menu-card {
+            background: #F9FAFB;
+            border: 2px solid #E5E7EB;
+            border-radius: 20px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-knee);
+            background: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+
+        .menu-card.pushup:hover {
+            border-color: var(--primary-pushup);
+        }
+
+        .icon-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #DDD;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        /* 워크아웃 뷰 공통 스타일 */
+        .set-counter {
+            font-size: 15px;
+            color: var(--text-sub);
+            margin-bottom: 24px;
             font-weight: 600;
             background: #F3F4F6;
             display: inline-block;
@@ -88,10 +146,10 @@
 
         .circle-progress {
             fill: none;
-            stroke: var(--primary);
+            stroke: #DDD;
             stroke-width: 12;
             stroke-linecap: round;
-            stroke-dasharray: 565;
+            stroke-dasharray: 565.48; /* 2 * pi * 90 */
             stroke-dashoffset: 0;
         }
 
@@ -100,276 +158,258 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-number {
             font-size: 64px;
             font-weight: 800;
             color: var(--text-main);
-            font-variant-numeric: tabular-nums;
-            transition: opacity 0.3s;
+            line-height: 1;
         }
 
-        /* 일시정지 시 시간 깜빡임 효과 */
-        .paused-text {
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+        .sub-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-sub);
+            margin-top: 5px;
         }
 
         .instruction {
-            font-size: 18px;
+            font-size: 17px;
             color: var(--text-main);
             margin-bottom: 30px;
-            min-height: 54px;
+            min-height: 52px;
             font-weight: 500;
-            line-height: 1.5;
+            line-height: 1.4;
+            word-break: keep-all;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
         }
 
         button {
-            background-color: var(--primary);
-            color: white;
             border: none;
             border-radius: 16px;
-            padding: 18px 0;
+            padding: 16px 0;
             width: 100%;
             font-size: 18px;
             font-weight: 700;
             cursor: pointer;
-            transition: transform 0.1s, background-color 0.3s, box-shadow 0.3s;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-            touch-action: manipulation; /* 모바일 더블탭 줌 방지 */
+            transition: all 0.2s;
+            touch-action: manipulation;
         }
 
-        button:active {
-            transform: scale(0.97);
+        .btn-start {
+            background-color: #111;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        button:hover {
-            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
-        }
-
-        /* 일시정지 전용 보조 버튼 스타일 */
-        .btn-secondary {
+        .btn-pause {
             background-color: #E5E7EB;
             color: #4B5563;
-            margin-top: 12px;
-            box-shadow: none;
         }
 
-        .btn-secondary:hover {
-            background-color: #D1D5DB;
-            box-shadow: none;
+        .btn-home {
+            background-color: transparent;
+            color: var(--text-sub);
+            font-size: 14px;
+            padding: 10px;
+            text-decoration: underline;
         }
 
-        /* 상태별 색상 클래스 */
-        body.state-exercise { background-color: #ECFDF5; }
-        body.state-rest { background-color: #FFFBEB; }
-        
-        .state-exercise .status-bar { background-color: var(--exercise); }
-        .state-exercise .circle-progress { stroke: var(--exercise); }
-        .state-exercise button:not(.btn-secondary) { background-color: var(--exercise); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        /* 상태별 애니메이션 및 색상 */
+        .paused-text { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        .state-rest .status-bar { background-color: var(--rest); }
-        .state-rest .circle-progress { stroke: var(--rest); }
-        
-        .hidden {
-            display: none !important;
-        }
+        .hidden { display: none !important; }
 
-        /* 모바일 최적화 (반응형) */
+        /* 모바일 최적화 */
         @media (max-width: 480px) {
-            .container {
-                padding: 30px 20px;
-                border-radius: 20px;
-            }
-            h1 {
-                font-size: 20px;
-                margin-bottom: 8px;
-            }
-            .set-counter {
-                font-size: 14px;
-                margin-bottom: 24px;
-                padding: 4px 12px;
-            }
-            .timer-wrapper {
-                width: 160px;
-                height: 160px;
-                margin-bottom: 24px;
-            }
-            .time-display {
-                font-size: 52px;
-            }
-            .instruction {
-                font-size: 15px;
-                margin-bottom: 24px;
-                min-height: 45px;
-            }
-            button {
-                font-size: 16px;
-                padding: 15px 0;
-            }
-            .btn-secondary {
-                margin-top: 10px;
-            }
+            .container { padding: 30px 20px; min-height: 500px; }
+            .timer-wrapper { width: 170px; height: 170px; }
+            .main-number { font-size: 52px; }
+            h1 { font-size: 20px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <div class="container" id="app">
         <div class="status-bar" id="statusBar"></div>
-        
-        <h1>의자에 앉아서 다리 펴기</h1>
-        <div class="set-counter" id="setCounter">준비</div>
 
-        <div class="timer-wrapper">
-            <svg class="timer-svg" viewBox="0 0 200 200">
-                <circle class="circle-bg" cx="100" cy="100" r="90"></circle>
-                <circle class="circle-progress" id="progressCircle" cx="100" cy="100" r="90"></circle>
-            </svg>
-            <div class="time-display" id="timeDisplay">10</div>
+        <!-- 메인 홈 화면 -->
+        <div id="view-home">
+            <h1>오늘의 운동</h1>
+            <p class="description">원하시는 운동을 선택하여 세션을 시작하세요.</p>
+            <div class="menu-grid">
+                <div class="menu-card" onclick="switchMode('knee')">
+                    <div class="icon-circle" style="color: var(--primary-knee)">🦵</div>
+                    <div style="font-weight: 700; font-size: 18px;">무릎 운동</div>
+                    <div style="font-size: 13px; color: var(--text-sub);">다리 펴기 (10초 유지 / 5세트)</div>
+                </div>
+                <div class="menu-card pushup" onclick="switchMode('pushup')">
+                    <div class="icon-circle" style="color: var(--primary-pushup)">💪</div>
+                    <div style="font-weight: 700; font-size: 18px;">팔굽혀펴기</div>
+                    <div style="font-size: 13px; color: var(--text-sub);">푸시업 (3초당 1개 / 3세트)</div>
+                </div>
+            </div>
         </div>
 
-        <div class="instruction" id="instructionText">
-            시작 버튼을 누르면 타이머가 작동합니다.<br>(총 5세트 진행)
-        </div>
+        <!-- 워크아웃 화면 -->
+        <div id="view-workout" class="hidden">
+            <h1 id="workout-title">운동 이름</h1>
+            <div class="set-counter" id="setCounter">준비</div>
 
-        <button id="mainBtn" onclick="handleButtonClick()">시작하기</button>
-        <!-- 일시정지 공용 버튼 추가 -->
-        <button id="pauseBtn" class="btn-secondary hidden" onclick="togglePause()">일시정지</button>
+            <div class="timer-wrapper">
+                <svg class="timer-svg" viewBox="0 0 200 200">
+                    <circle class="circle-bg" cx="100" cy="100" r="90"></circle>
+                    <circle class="circle-progress" id="progressCircle" cx="100" cy="100" r="90"></circle>
+                </svg>
+                <div class="time-display" id="timeDisplay">
+                    <span class="main-number" id="mainNumber">0</span>
+                    <span class="sub-label" id="subLabel">/ 10 개</span>
+                </div>
+            </div>
+
+            <div class="instruction" id="instructionText">지침 문구</div>
+
+            <div class="button-group">
+                <button id="btn-action" class="btn-start" onclick="handleMainAction()">시작하기</button>
+                <button id="btn-pause" class="btn-pause hidden" onclick="togglePause()">일시정지</button>
+                <button class="btn-home" onclick="goHome()">메인으로 돌아가기</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        const TOTAL_SETS = 5;
-        const EXERCISE_TIME = 10;
-        const REST_TIME = 5;
-
+        // --- 전역 설정 및 상태 ---
+        let mode = 'home'; 
+        let phase = 'ready'; 
+        let isPaused = false;
         let currentSet = 0;
+        let currentRep = 0;
         let timeLeft = 0;
         let totalTimeForPhase = 0;
         let timerInterval = null;
-        let phase = 'ready'; // ready, exercise, rest, finished
-        let isPaused = false;
+        let audioCtx = null;
+        let isTTSInitialized = false;
 
-        const timeDisplay = document.getElementById('timeDisplay');
+        const CIRCUMFERENCE = 565.48; // 2 * pi * 90
+
+        // DOM 참조
+        const body = document.body; // ReferenceError 수정을 위해 추가
+        const statusBar = document.getElementById('statusBar');
+        const viewHome = document.getElementById('view-home');
+        const viewWorkout = document.getElementById('view-workout');
+        const workoutTitle = document.getElementById('workout-title');
         const setCounter = document.getElementById('setCounter');
-        const instructionText = document.getElementById('instructionText');
-        const mainBtn = document.getElementById('mainBtn');
-        const pauseBtn = document.getElementById('pauseBtn');
         const progressCircle = document.getElementById('progressCircle');
-        const body = document.body;
+        const mainNumber = document.getElementById('mainNumber');
+        const subLabel = document.getElementById('subLabel');
+        const instructionText = document.getElementById('instructionText');
+        const btnAction = document.getElementById('btn-action');
+        const btnPause = document.getElementById('btn-pause');
 
-        const CIRCUMFERENCE = 2 * Math.PI * 90;
+        // --- 초기화 및 모드 전환 ---
+        function switchMode(newMode) {
+            resetTimer();
+            mode = newMode;
+            viewHome.classList.add('hidden');
+            viewWorkout.classList.remove('hidden');
 
-        let audioCtx;
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (mode === 'knee') {
+                workoutTitle.innerText = "무릎 운동 (다리 펴기)";
+                statusBar.style.backgroundColor = "var(--primary-knee)";
+            } else {
+                workoutTitle.innerText = "팔굽혀펴기 (푸시업)";
+                statusBar.style.backgroundColor = "var(--primary-pushup)";
             }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+            updateUI(true);
+        }
+
+        function goHome() {
+            resetTimer();
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            mode = 'home';
+            viewHome.classList.remove('hidden');
+            viewWorkout.classList.add('hidden');
+            body.style.backgroundColor = "var(--bg)";
+            statusBar.style.backgroundColor = "#DDD";
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            phase = 'ready';
+            isPaused = false;
+            currentSet = 0;
+            currentRep = 0;
+            timeLeft = 0;
+            btnPause.classList.add('hidden');
+            mainNumber.classList.remove('paused-text');
+        }
+
+        // --- 사운드 및 TTS ---
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (!isTTSInitialized) {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+                }
+                isTTSInitialized = true;
             }
         }
 
         function playSound(type) {
             if (!audioCtx) return;
-
             const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-
-            osc.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-
-            if (type === 'tick') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
-            } else if (type === 'start') {
-                osc.type = 'sine';
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if (type === 'start') {
                 osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.8, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.5);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'tick') {
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
             } else if (type === 'rest') {
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.6, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.4);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
             } else if (type === 'finish') {
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15);
-                osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.3);
-                osc.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.45);
-                
-                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.8);
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((f, i) => {
+                    osc.frequency.setValueAtTime(f, audioCtx.currentTime + (i * 0.15));
+                });
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.8);
             }
         }
 
-        function updateUI(isReset = false) {
-            timeDisplay.innerText = timeLeft;
-            
-            const progress = totalTimeForPhase > 0 ? (timeLeft / totalTimeForPhase) : 0;
-            const offset = CIRCUMFERENCE - (progress * CIRCUMFERENCE);
-
-            // isReset이 true일 경우 애니메이션 없이 즉시 상태 반영 (꽉 찬 상태로 바로 시작)
-            if (isReset) {
-                progressCircle.style.transition = 'none';
-                progressCircle.style.strokeDashoffset = offset;
-                void progressCircle.offsetWidth; // Force reflow
-            } else {
-                progressCircle.style.transition = 'stroke-dashoffset 1s linear, stroke 1s ease';
-                progressCircle.style.strokeDashoffset = offset;
-            }
-
-            if (phase === 'exercise') {
-                setCounter.innerText = `${currentSet} / ${TOTAL_SETS} 세트 (운동 중)`;
-                instructionText.innerHTML = "<strong>펴진상태로 10초간 유지합니다.</strong>";
-                body.className = 'state-exercise';
-                mainBtn.classList.add('hidden');
-                pauseBtn.classList.remove('hidden');
-                pauseBtn.innerText = isPaused ? "계속하기" : "일시정지";
-            } else if (phase === 'rest') {
-                setCounter.innerText = `${currentSet} / ${TOTAL_SETS} 세트 (휴식 중)`;
-                instructionText.innerHTML = "다리를 내리고 근육을 이완시키며<br>5초간 휴식합니다.";
-                body.className = 'state-rest';
-                mainBtn.classList.add('hidden');
-                pauseBtn.classList.remove('hidden');
-                pauseBtn.innerText = isPaused ? "계속하기" : "일시정지";
-            } else if (phase === 'finished') {
-                setCounter.innerText = "운동 완료!";
-                instructionText.innerHTML = "<strong>고생하셨어요. 틈틈이 하세요!</strong><br>건강한 다리 근육을 위해 매일 꾸준히 해주세요.";
-                timeDisplay.innerText = "0";
-                progressCircle.style.strokeDashoffset = CIRCUMFERENCE;
-                body.className = '';
-                
-                mainBtn.innerText = "다시 시작";
-                mainBtn.classList.remove('hidden');
-                pauseBtn.classList.add('hidden');
-                timeDisplay.classList.remove('paused-text');
-            } else {
-                setCounter.innerText = "준비";
-                timeDisplay.innerText = EXERCISE_TIME;
-                progressCircle.style.strokeDashoffset = 0;
-                body.className = '';
-                mainBtn.innerText = "시작하기";
-                mainBtn.classList.remove('hidden');
-                pauseBtn.classList.add('hidden');
-                timeDisplay.classList.remove('paused-text');
-            }
+        function speak(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ko-KR';
+            u.rate = 1.2;
+            window.speechSynthesis.speak(u);
         }
 
-        function handleButtonClick() {
+        // --- 메인 로직 ---
+        function handleMainAction() {
             initAudio();
             if (phase === 'ready' || phase === 'finished') {
                 startWorkout();
@@ -377,89 +417,209 @@
         }
 
         function togglePause() {
-            initAudio();
-            // 0초에서 전환 대기 중일 때는 일시정지 무시 (버그 방지)
-            if (timeLeft <= 0) return;
-
+            if (timeLeft <= 0 && phase !== 'exercise') return;
             isPaused = !isPaused;
-
             if (isPaused) {
                 clearInterval(timerInterval);
-                timeDisplay.classList.add('paused-text'); // 깜빡임 효과 추가
+                if ('speechSynthesis' in window) window.speechSynthesis.pause();
+                mainNumber.classList.add('paused-text');
+                btnPause.innerText = "계속하기";
             } else {
                 timerInterval = setInterval(tick, 1000);
-                timeDisplay.classList.remove('paused-text'); // 깜빡임 효과 제거
+                if ('speechSynthesis' in window) window.speechSynthesis.resume();
+                mainNumber.classList.remove('paused-text');
+                btnPause.innerText = "일시정지";
             }
-            updateUI();
         }
 
         function startWorkout() {
             currentSet = 1;
             isPaused = false;
-            startExercisePhase();
+            if (mode === 'knee') startKneeExercise();
+            else startPushupExercise();
         }
 
-        function startExercisePhase() {
+        function startKneeExercise() {
             phase = 'exercise';
-            timeLeft = EXERCISE_TIME;
-            totalTimeForPhase = EXERCISE_TIME;
+            timeLeft = 10;
+            totalTimeForPhase = 10;
             playSound('start');
-            
-            updateUI(true); // 세트 시작 시 애니메이션 없이 즉시 꽉 채우기
-            
+            updateUI(true);
+            btnPause.classList.remove('hidden');
+            btnPause.innerText = "일시정지";
             clearInterval(timerInterval);
             timerInterval = setInterval(tick, 1000);
         }
 
-        function startRestPhase() {
+        function startKneeRest() {
             phase = 'rest';
-            timeLeft = REST_TIME;
-            totalTimeForPhase = REST_TIME;
+            timeLeft = 5;
+            totalTimeForPhase = 5;
             playSound('rest');
-            
-            updateUI(true); // 휴식 시작 시 애니메이션 없이 즉시 꽉 채우기
-            
+            updateUI(true);
             clearInterval(timerInterval);
             timerInterval = setInterval(tick, 1000);
+        }
+
+        function startPushupExercise() {
+            phase = 'exercise';
+            currentRep = 1;
+            timeLeft = 30; 
+            totalTimeForPhase = 30;
+            playSound('start');
+            speak("1개");
+            updateUI(true);
+            btnPause.classList.remove('hidden');
+            btnPause.innerText = "일시정지";
+            clearInterval(timerInterval);
+            timerInterval = setInterval(tick, 1000);
+        }
+
+        function startPushupRest() {
+            phase = 'rest';
+            timeLeft = 10;
+            totalTimeForPhase = 10;
+            playSound('rest');
+            speak("휴식입니다.");
+            updateUI(true);
+            clearInterval(timerInterval);
+            timerInterval = setInterval(tick, 1000);
+        }
+
+        function tick() {
+            if (isPaused) return;
+            timeLeft--;
+            if (timeLeft < 0) timeLeft = 0;
+
+            if (mode === 'knee') {
+                if (timeLeft > 0 && timeLeft <= 3) playSound('tick');
+                updateUI();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    setTimeout(() => {
+                        if (phase === 'exercise') {
+                            if (currentSet >= 5) finishWorkout();
+                            else startKneeRest();
+                        } else {
+                            currentSet++;
+                            startKneeExercise();
+                        }
+                    }, 1000);
+                }
+            } else {
+                if (phase === 'exercise') {
+                    let elapsed = 30 - timeLeft;
+                    let calculatedRep = Math.floor(elapsed / 3) + 1;
+                    if (calculatedRep > 10) {
+                        clearInterval(timerInterval);
+                        setTimeout(() => {
+                            if (currentSet >= 3) finishWorkout();
+                            else startPushupRest();
+                        }, 1000);
+                    } else {
+                        if (calculatedRep > currentRep && calculatedRep <= 10) {
+                            currentRep = calculatedRep;
+                            speak(currentRep + "개");
+                        }
+                        updateUI();
+                    }
+                } else {
+                    if (timeLeft <= 3 && timeLeft > 0) speak(timeLeft.toString());
+                    updateUI();
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        setTimeout(() => {
+                            currentSet++;
+                            startPushupExercise();
+                        }, 1000);
+                    }
+                }
+            }
         }
 
         function finishWorkout() {
             phase = 'finished';
             clearInterval(timerInterval);
             playSound('finish');
-            updateUI(false);
+            if (mode === 'pushup') speak("모든 운동을 완료했습니다. 수고하셨습니다.");
+            updateUI();
         }
 
-        function tick() {
-            timeLeft--;
-            updateUI(); // 0이 되는 순간 UI에 즉시 반영
+        function updateUI(isReset = false) {
+            const progress = totalTimeForPhase > 0 ? (timeLeft / totalTimeForPhase) : 0;
+            const offset = CIRCUMFERENCE - (progress * CIRCUMFERENCE);
 
-            if (timeLeft > 0 && timeLeft <= 3) {
-                playSound('tick');
+            if (isReset) {
+                progressCircle.style.transition = 'none';
+                progressCircle.style.strokeDashoffset = offset;
+                void progressCircle.offsetWidth;
+            } else {
+                progressCircle.style.transition = 'stroke-dashoffset 1s linear, stroke 1s ease';
+                progressCircle.style.strokeDashoffset = offset;
             }
 
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                
-                // 0초 표시 및 게이지 비워짐을 보여주기 위해 1초(1000ms) 대기 후 부드럽게 다음 상태로 전환
-                setTimeout(() => {
-                    if (phase === 'exercise') {
-                        if (currentSet >= TOTAL_SETS) {
-                            finishWorkout();
-                        } else {
-                            startRestPhase();
-                        }
-                    } else if (phase === 'rest') {
-                        currentSet++;
-                        startExercisePhase();
-                    }
-                }, 1000);
+            if (phase === 'exercise') {
+                btnAction.classList.add('hidden');
+                if (mode === 'knee') {
+                    mainNumber.innerText = timeLeft;
+                    subLabel.innerText = "초 유지";
+                    instructionText.innerHTML = "<strong>펴진상태로 10초간 유지합니다.</strong>";
+                    body.style.backgroundColor = "#ECFDF5";
+                    statusBar.style.backgroundColor = "var(--exercise-knee)";
+                    progressCircle.style.stroke = "var(--exercise-knee)";
+                    setCounter.innerText = `${currentSet} / 5 세트 (운동 중)`;
+                } else {
+                    mainNumber.innerText = currentRep;
+                    subLabel.innerText = "/ 10 개";
+                    instructionText.innerHTML = "<strong>음성에 맞춰 일정한 속도로 수행하세요.</strong>";
+                    body.style.backgroundColor = "#FEF2F2";
+                    statusBar.style.backgroundColor = "var(--primary-pushup)";
+                    progressCircle.style.stroke = "var(--primary-pushup)";
+                    setCounter.innerText = `${currentSet} / 3 세트 (운동 중)`;
+                }
+            } 
+            else if (phase === 'rest') {
+                btnAction.classList.add('hidden');
+                mainNumber.innerText = timeLeft;
+                subLabel.innerText = "초 휴식";
+                instructionText.innerHTML = "근육을 이완시키며 잠시 휴식합니다.";
+                body.style.backgroundColor = mode === 'knee' ? "#FFFBEB" : "#EFF6FF";
+                statusBar.style.backgroundColor = mode === 'knee' ? "var(--rest-knee)" : "var(--rest-pushup)";
+                progressCircle.style.stroke = mode === 'knee' ? "var(--rest-knee)" : "var(--rest-pushup)";
+                setCounter.innerText = `${currentSet} / ${mode === 'knee' ? 5 : 3} 세트 (휴식 중)`;
+            } 
+            else if (phase === 'finished') {
+                mainNumber.innerText = "완료";
+                subLabel.innerText = "수고하셨습니다!";
+                instructionText.innerHTML = mode === 'knee' ? "<strong>고생하셨어요. 틈틈이 하세요!</strong>" : "<strong>수고하셨습니다! 최고의 펌핑이네요.</strong>";
+                body.style.backgroundColor = "white";
+                statusBar.style.backgroundColor = "#10B981";
+                progressCircle.style.stroke = "#10B981";
+                btnAction.innerText = "다시 시작하기";
+                btnAction.classList.remove('hidden');
+                btnPause.classList.add('hidden');
+            }
+            else {
+                // ready 상태
+                btnAction.classList.remove('hidden');
+                btnPause.classList.add('hidden');
+                btnAction.innerText = "시작하기";
+                body.style.backgroundColor = "var(--bg)";
+                progressCircle.style.stroke = "#DDD";
+                setCounter.innerText = "준비";
+                if (mode === 'knee') {
+                    mainNumber.innerText = "10";
+                    subLabel.innerText = "초 유지";
+                    instructionText.innerText = "시작 버튼을 누르면 타이머가 작동합니다.\n(10초 유지 / 5세트)";
+                } else {
+                    mainNumber.innerText = "10";
+                    subLabel.innerText = "개 x 3세트";
+                    instructionText.innerText = "시작 버튼을 누르면 음성 카운트가 시작됩니다.\n(3초당 1개 속도 유지)";
+                }
             }
         }
 
-        // 초기 세팅
         progressCircle.style.strokeDasharray = CIRCUMFERENCE;
-        updateUI(true);
     </script>
 </body>
 </html>
